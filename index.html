@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Chat example</title>
+
+        <link rel="stylesheet" 
+            href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">    
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font: 13px Helvetica, Arial; }
+            form { border:1px solid black; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+            form input { border: 1; padding: 10px; width: 90%; margin-right: .5%; }
+            form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+            #messages { list-style-type: none; margin: 0; padding: 0; }
+            #messages li { padding: 5px 10px; }
+            #messages li:nth-child(odd) { background: #eee; }
+            .fa-check-circle { color: #080 }
+
+            .hidden {
+                display: none;
+            }
+
+            .is-private {
+                color: #4285f4;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="chat">
+            <ul id="messages" class="chat-messages"></ul>
+            <form class="chat-actio#4285f4ns" action="">
+                Connected as User #<span id="u" class="chat-user-nickname"></span>
+                <span class="chat-connected fa fa-check-circle hidden"></span>
+                <input id="m" autocomplete="off" class="chat-message" />
+                <button class="chat-send">Send</button>
+            </form>
+        </div>
+    </body>
+
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+        /**
+         * Components
+         */
+
+        var socket      = io(),
+            _id         = Math.floor(Math.random() * 1000);
+
+        $('#u').html(_id);
+
+        // Sending message
+        $('form').submit(function() {
+
+            // Socket io
+            var bundle = {
+                id: _id,
+                message: $('#m').val()
+            };
+            socket.emit('chat_message', bundle);
+
+            // Sending to user itself
+            $('#messages').append('<li> You said: ' + $('#m').val() + '</i>');
+            $('#m').val('');
+
+            return false;
+        });
+
+        /**
+         * SocketIO
+         */
+
+        socket.emit('new_connection', _id);
+
+        // Receiving chat message
+        socket.on('chat_message', function(message) {
+            $('#messages').append('<li>' + message + '</i>');
+        });
+
+        socket.on('private_message', function(message) {
+            $('#messages').append([
+                '<li class="is-private"> <i>(private)</i>', 
+                message,
+                '</i>'
+            ].join(''));
+        });
+
+        // Displaying connected icon
+        socket.on('get_session', function(session_id) {
+            $('.chat-connected').removeClass('hidden');
+        });
+
+    </script>
+</html>
