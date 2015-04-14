@@ -1,7 +1,7 @@
 # Chatty
-A widget chat for your web application.
+Made with ♥ by me, [Matheus Santos](https://github.com/matheus-santos).
 
-Aauthor: Matheus Cesario <mts.cesario@gmail.com>
+A widget chat for your web application.
 
 ## Installation
 On directory
