@@ -23,10 +23,10 @@ app.get('/', function(req, res){
  * @return null
  */
 
-var USER_LEFT    = 'User left the conversation',
-    USER_ENTERED = 'User entered into conversation',
-    users        = [],
-    regex_user   = /\@(.*) /i;
+var users        = [], // Keeping user's sockets references
+    sockets      = [], // Inverted list to find users from their sockets
+    regex_user   = /\@(.*) /i,
+    online_users = [];
 
 io.on('connection', function(socket) {
 
@@ -37,6 +37,12 @@ io.on('connection', function(socket) {
         console.log('    User:    ' + id + ' connected');
         console.log('    Session: ' + socket.id + ' connected');
 
+        // Updating client's online users list
+        io.emit('add_user_to_list', id);
+        online_users.push(id);
+        socket.emit('online_users', online_users);
+
+        // Alerting them all that a new user entered
         io.emit('chat_message', 'User #' + id + ' connected..');
     
         // Assigning users
@@ -45,12 +51,32 @@ io.on('connection', function(socket) {
             socket_id: socket.id,
             socket: socket
         };
+
+        // Inverted index
+        sockets[socket] = id;
     });
 
     // User has disconnected
     socket.on('disconnect', function() {
+
+        // Removing from list
+        var user_id = sockets[socket];
+        io.emit('remove_user_from_list', user_id);
+
+        // Removing user's references
+        users   = users.slice(user_id, 1);
+        sockets = sockets.slice(socket, 1);
+
+        for (var i = online_users.length - 1; i >= 0; i--) {
+            if (online_users[i] == user_id) {
+                online_users = online_users.slice(i, 1);
+                break;
+            }
+        };
+
+        // Alerting that the user has left the conversation
         console.log('user disconnected');
-        io.emit('chat_message', USER_LEFT);
+        io.emit('chat_message', 'User #' + user_id + ' left the conversation');
     });
 
     // Message received

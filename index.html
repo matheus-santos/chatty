@@ -23,13 +23,23 @@
             .is-private {
                 color: #4285f4;
             }
+
+            .chat-online-users {
+                border: 1px solid black;
+            }
+            
+            .green {
+                color: #080;
+            }
+
         </style>
     </head>
 
     <body>
         <div class="chat">
+            <ul class="chat-online-users"></ul>
             <ul id="messages" class="chat-messages"></ul>
-            <form class="chat-actio#4285f4ns" action="">
+            <form class="chat-actions" action="">
                 Connected as User #<span id="u" class="chat-user-nickname"></span>
                 <span class="chat-connected fa fa-check-circle hidden"></span>
                 <input id="m" autocomplete="off" class="chat-message" />
@@ -81,10 +91,40 @@
 
         socket.on('private_message', function(message) {
             $('#messages').append([
-                '<li class="is-private"> <i>(private)</i>', 
+                '<li class="is-private"> <i>(private)</i> ', 
                 message,
                 '</i>'
             ].join(''));
+        });
+
+        // Appending users to the list
+        socket.on('add_user_to_list', function(id) {
+            $('.chat-online-users').append([
+                '<li id="user-', id, '">', 
+                    '<span class="fa fa-circle green"></span> User #', 
+                    id, 
+                '</li>'
+            ].join(''));
+        });
+
+        // Removing user from list
+        socket.on('remove_user_from_list', function(id) {
+            $('.chat-online-users #user-' + id).remove();
+        });
+
+        // Online users list
+        socket.on('online_users', function(users) {
+            var list = '';
+            $.each(users, function(index, id) {
+                list += [
+                    '<li id="user-', id, '">', 
+                        '<span class="fa fa-circle green"></span> User #', 
+                        id, 
+                    '</li>'
+                ].join('');
+            });
+
+            $('.chat-online-users').html(list);
         });
 
         // Displaying connected icon
