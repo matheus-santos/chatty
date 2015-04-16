@@ -33,14 +33,9 @@ io.on('connection', function(socket) {
     // User connected
     socket.on('new_connection', function(id) {
 
-        console.log('New Connection');
-        console.log('    User:    ' + id + ' connected');
-        console.log('    Session: ' + socket.id + ' connected');
-
         // Updating client's online users list
-        io.emit('add_user_to_list', id);
         online_users.push(id);
-        socket.emit('online_users', online_users);
+        io.emit('online_users', online_users);
 
         // Alerting them all that a new user entered
         io.emit('chat_message', 'User #' + id + ' connected..');
@@ -53,38 +48,46 @@ io.on('connection', function(socket) {
         };
 
         // Inverted index
-        sockets[socket] = id;
+        sockets[socket.id] = id;
+
+        // Displaying online users list
+        console.log('online_users = ');
+        console.log(online_users);
     });
 
     // User has disconnected
     socket.on('disconnect', function() {
 
+        console.log('Removing ', sockets[socket.id]);
+
         // Removing from list
-        var user_id = sockets[socket];
-        io.emit('remove_user_from_list', user_id);
+        var user_id = sockets[socket.id];
+        var index   = online_users.indexOf(user_id);
 
         // Removing user's references
-        users   = users.slice(user_id, 1);
-        sockets = sockets.slice(socket, 1);
+        users.splice(user_id, 1);
+        sockets.splice(socket.id, 1);
+        
+        if (index > -1) {
+            online_users.splice(index, 1);
+        }
 
-        for (var i = online_users.length - 1; i >= 0; i--) {
-            if (online_users[i] == user_id) {
-                online_users = online_users.slice(i, 1);
-                break;
-            }
-        };
+        // Broadcasting signal indicating to remove user from list
+        io.emit('remove_user_from_list', user_id);
 
         // Alerting that the user has left the conversation
-        console.log('user disconnected');
         io.emit('chat_message', 'User #' + user_id + ' left the conversation');
+
+        // Displaying online users list
+        console.log('online_users = ');
+        console.log(online_users);
     });
 
     // Message received
     socket.on('chat_message', function(bundle) {
 
-        console.log('----------------');
-        console.log('id:      ' + bundle.id);
-        console.log('message: ' + bundle.message);
+        // Message
+        console.log(bundle.id + ' said: ' + bundle.message);
 
         // Message
         var message = 'User #' + bundle.id + ' said: ' + bundle.message;
@@ -108,6 +111,13 @@ io.on('connection', function(socket) {
         socket.broadcast.emit('chat_message', message);
 
         return true;
+    });
+
+    // User is typping
+    socket.on('user_typing', function(is_typing) {
+
+        // Sending to all clients except sender
+        socket.broadcast.emit('user_typing', is_typing);
     });
 });
 

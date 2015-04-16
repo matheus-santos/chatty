@@ -32,6 +32,11 @@
                 color: #080;
             }
 
+            .user-typing {
+                color: #080;
+                text
+            }
+
         </style>
     </head>
 
@@ -40,7 +45,11 @@
             <ul class="chat-online-users"></ul>
             <ul id="messages" class="chat-messages"></ul>
             <form class="chat-actions" action="">
-                Connected as User #<span id="u" class="chat-user-nickname"></span>
+                <i class="user-typing hidden">User is typing...</i>
+                <p>
+                    Connected as User 
+                    #<span id="u" class="chat-user-nickname"></span>
+                </p>
                 <span class="chat-connected fa fa-check-circle hidden"></span>
                 <input id="m" autocomplete="off" class="chat-message" />
                 <button class="chat-send">Send</button>
@@ -56,8 +65,9 @@
          * Components
          */
 
-        var socket      = io(),
-            _id         = Math.floor(Math.random() * 1000);
+        var socket     = io(),
+            _id        = Math.floor(Math.random() * 1000),
+            timeout_id = 0;
 
         $('#u').html(_id);
 
@@ -78,6 +88,16 @@
             return false;
         });
 
+        $('form').on('keypress',  function(event) {
+            window.clearTimeout(timeout_id);
+
+            socket.emit('user_typing', true);
+
+            timeout_id = window.setTimeout(function() {
+                socket.emit('user_typing', false);
+            }, 500);
+        });
+
         /**
          * SocketIO
          */
@@ -94,16 +114,6 @@
                 '<li class="is-private"> <i>(private)</i> ', 
                 message,
                 '</i>'
-            ].join(''));
-        });
-
-        // Appending users to the list
-        socket.on('add_user_to_list', function(id) {
-            $('.chat-online-users').append([
-                '<li id="user-', id, '">', 
-                    '<span class="fa fa-circle green"></span> User #', 
-                    id, 
-                '</li>'
             ].join(''));
         });
 
@@ -130,6 +140,17 @@
         // Displaying connected icon
         socket.on('get_session', function(session_id) {
             $('.chat-connected').removeClass('hidden');
+        });
+
+        // User is typping
+        socket.on('user_typing', function(is_typing) {
+
+            if (is_typing) {
+                $('.user-typing').removeClass('hidden');
+            } else {
+                $('.user-typing').addClass('hidden');
+            }
+            
         });
 
     </script>
